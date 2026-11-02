@@ -6,20 +6,19 @@ import dao.UsuarioDAO;
 
 import model.AcaoSustentavel;
 import model.RegistroAcao;
+import model.RegistroAcaoResposta;
+import model.SolicitacaoRegistroAcao;
 import model.Usuario;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import service.SistemaGamificacao;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/registros")
@@ -59,22 +58,40 @@ public class RegistroAcaoResource {
     }
 
     @PostMapping
-    public ResponseEntity<RegistroAcao> registrarAcao(
-            @RequestParam int usuarioId,
-            @RequestParam int acaoId) {
+    public ResponseEntity<?> registrarAcao(
+            @RequestBody SolicitacaoRegistroAcao solicitacao) {
+
+        if (solicitacao == null
+                || !solicitacao.validar()) {
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Dados do registro ou evidencia invalidos."
+            );
+        }
 
         Usuario usuario =
-                usuarioDAO.buscarPorId(usuarioId);
+                usuarioDAO.buscarPorId(
+                        solicitacao.getUsuarioId()
+                );
 
         if (usuario == null) {
-            return ResponseEntity.badRequest().build();
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Usuario nao encontrado."
+            );
         }
 
         AcaoSustentavel acao =
-                acaoDAO.buscarPorId(acaoId);
+                acaoDAO.buscarPorSlug(
+                        solicitacao.getAcaoSlug()
+                );
 
         if (acao == null) {
-            return ResponseEntity.badRequest().build();
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Acao sustentavel nao encontrada."
+            );
         }
 
         RegistroAcao registro =
@@ -86,20 +103,68 @@ public class RegistroAcaoResource {
         if (registro == null
                 || !registro.validarRegistro()) {
 
-            return ResponseEntity.badRequest().build();
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Nao foi possivel registrar a acao."
+            );
         }
 
         if (!registroDAO.criar(registro)) {
-            return ResponseEntity.badRequest().build();
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Erro ao salvar o registro."
+            );
         }
 
         if (!usuarioDAO.atualizar(usuario)) {
             registroDAO.excluir(registro.getId());
-            return ResponseEntity.badRequest().build();
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Erro ao atualizar a pontuacao do usuario."
+            );
         }
+
+        RegistroAcaoResposta registroResposta =
+                new RegistroAcaoResposta(
+                        registro.getId(),
+                        solicitacao.getAcaoSlug(),
+                        registro.getStatusValidacao(),
+                        registro.getPontosObtidos()
+                );
+
+        Map<String, Object> resposta =
+                new HashMap<>();
+
+        resposta.put(
+                "registro",
+                registroResposta
+        );
+
+        resposta.put(
+                "usuario",
+                usuario
+        );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(registro);
+                .body(resposta);
+    }
+
+    private ResponseEntity<Map<String, String>> erro(
+            HttpStatus status,
+            String mensagem) {
+
+        Map<String, String> resposta =
+                new HashMap<>();
+
+        resposta.put(
+                "erro",
+                mensagem
+        );
+
+        return ResponseEntity
+                .status(status)
+                .body(resposta);
     }
 }

@@ -80,6 +80,37 @@ public class AcaoSustentavelDAO {
         }
     }
 
+    public AcaoSustentavel buscarPorSlug(String slug) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        String sql =
+                "SELECT * FROM TB_ACAO_SUSTENTAVEL WHERE slug_acao = ?";
+
+        try {
+            connection = ConexaoOracleProjeto.conectar();
+            statement = connection.prepareStatement(sql);
+            statement.setString(1, slug);
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return montar(resultSet);
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            System.out.println(
+                    "Erro ao buscar acao por slug: " + e.getMessage()
+            );
+            return null;
+
+        } finally {
+            fechar(resultSet, statement, connection);
+        }
+    }
+
     public List<AcaoSustentavel> listarTodas() {
         Connection connection = null;
         PreparedStatement statement = null;
@@ -160,9 +191,10 @@ public class AcaoSustentavelDAO {
         }
     }
 
-    private void preencher(PreparedStatement statement,
-                           AcaoSustentavel acao,
-                           boolean incluirId) throws SQLException {
+    private void preencher(
+            PreparedStatement statement,
+            AcaoSustentavel acao,
+            boolean incluirId) throws SQLException {
 
         statement.setString(1, acao.getNome());
         statement.setString(2, acao.getObjetivoSustentavel());
@@ -191,9 +223,10 @@ public class AcaoSustentavelDAO {
         );
     }
 
-    private void fechar(ResultSet resultSet,
-                        PreparedStatement statement,
-                        Connection connection) {
+    private void fechar(
+            ResultSet resultSet,
+            PreparedStatement statement,
+            Connection connection) {
 
         if (resultSet != null) {
             try {

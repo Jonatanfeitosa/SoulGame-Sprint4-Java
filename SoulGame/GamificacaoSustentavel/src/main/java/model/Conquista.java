@@ -1,5 +1,8 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Conquista {
 
     private int id;
@@ -58,6 +61,7 @@ public class Conquista {
         this.descricao = descricao;
     }
 
+    @JsonIgnore
     public String getTipo() {
         return tipo;
     }
@@ -66,6 +70,17 @@ public class Conquista {
         this.tipo = tipo;
     }
 
+    @JsonProperty("tipoCriterio")
+    public String getTipoCriterio() {
+        return tipo;
+    }
+
+    @JsonProperty("tipoCriterio")
+    public void setTipoCriterio(String tipoCriterio) {
+        this.tipo = tipoCriterio;
+    }
+
+    @JsonIgnore
     public Integer getCriterioValor() {
         return criterioValor;
     }
@@ -74,6 +89,17 @@ public class Conquista {
         this.criterioValor = criterioValor;
     }
 
+    @JsonProperty("valorCriterio")
+    public Integer getValorCriterio() {
+        return criterioValor;
+    }
+
+    @JsonProperty("valorCriterio")
+    public void setValorCriterio(Integer valorCriterio) {
+        this.criterioValor = valorCriterio;
+    }
+
+    @JsonIgnore
     public Integer getOdsId() {
         return odsId;
     }
@@ -82,6 +108,7 @@ public class Conquista {
         this.odsId = odsId;
     }
 
+    @JsonIgnore
     public String getAcaoSlug() {
         return acaoSlug;
     }
@@ -90,11 +117,21 @@ public class Conquista {
         this.acaoSlug = acaoSlug;
     }
 
+    @JsonIgnore
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    @JsonProperty("icone")
+    public String getIcone() {
+        if (odsId != null) {
+            return "ods" + odsId;
+        }
+
+        return "conquista";
     }
 }

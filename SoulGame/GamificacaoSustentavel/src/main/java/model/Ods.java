@@ -1,5 +1,8 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Ods {
 
     private int id;
@@ -49,12 +52,23 @@ public class Ods {
         this.descricao = descricao;
     }
 
+    @JsonIgnore
     public String getCorHex() {
         return corHex;
     }
 
     public void setCorHex(String corHex) {
         this.corHex = corHex;
+    }
+
+    @JsonProperty("cor")
+    public String getCor() {
+        return corHex;
+    }
+
+    @JsonProperty("cor")
+    public void setCor(String cor) {
+        this.corHex = cor;
     }
 
     public String getIcone() {

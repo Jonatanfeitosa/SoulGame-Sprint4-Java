@@ -8,11 +8,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "resource",
         "service",
         "dao",
-        "conexao"
+        "conexao",
+        "config"
 })
 public class GamificacaoSustentavelApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(GamificacaoSustentavelApplication.class, args);
+        SpringApplication.run(
+                GamificacaoSustentavelApplication.class,
+                args
+        );
     }
 }
