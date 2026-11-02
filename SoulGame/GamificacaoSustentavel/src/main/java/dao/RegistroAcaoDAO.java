@@ -1,6 +1,7 @@
 package dao;
 
 import conexao.ConexaoOracleProjeto;
+import model.HistoricoItem;
 import model.RegistroAcao;
 
 import java.sql.Connection;
@@ -28,6 +29,7 @@ public class RegistroAcaoDAO {
             connection = ConexaoOracleProjeto.conectar();
 
             String[] colunasGeradas = {"ID_REGISTRO"};
+
             statement = connection.prepareStatement(
                     sql,
                     colunasGeradas
@@ -64,7 +66,8 @@ public class RegistroAcaoDAO {
         ResultSet resultSet = null;
 
         String sql =
-                "SELECT * FROM TB_REGISTRO_ACAO WHERE id_registro = ?";
+                "SELECT * FROM TB_REGISTRO_ACAO "
+                        + "WHERE id_registro = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -97,7 +100,8 @@ public class RegistroAcaoDAO {
         List<RegistroAcao> lista = new ArrayList<>();
 
         String sql =
-                "SELECT * FROM TB_REGISTRO_ACAO ORDER BY id_registro";
+                "SELECT * FROM TB_REGISTRO_ACAO "
+                        + "ORDER BY id_registro";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -120,15 +124,101 @@ public class RegistroAcaoDAO {
         return lista;
     }
 
+    public List<HistoricoItem> listarHistoricoPorUsuario(
+            int usuarioId) {
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        List<HistoricoItem> historico =
+                new ArrayList<>();
+
+        String sql =
+                "SELECT "
+                        + "r.id_registro, "
+                        + "a.slug_acao, "
+                        + "a.nome_acao, "
+                        + "r.pontos_obtidos, "
+                        + "r.data_hora_registro "
+                        + "FROM TB_REGISTRO_ACAO r "
+                        + "INNER JOIN TB_ACAO_SUSTENTAVEL a "
+                        + "ON a.id_acao = r.id_acao "
+                        + "WHERE r.id_usuario = ? "
+                        + "ORDER BY r.data_hora_registro DESC";
+
+        try {
+            connection =
+                    ConexaoOracleProjeto.conectar();
+
+            statement =
+                    connection.prepareStatement(sql);
+
+            statement.setInt(
+                    1,
+                    usuarioId
+            );
+
+            resultSet =
+                    statement.executeQuery();
+
+            while (resultSet.next()) {
+
+                historico.add(
+                        new HistoricoItem(
+                                resultSet.getInt(
+                                        "id_registro"
+                                ),
+                                resultSet.getString(
+                                        "slug_acao"
+                                ),
+                                resultSet.getString(
+                                        "nome_acao"
+                                ),
+                                resultSet.getInt(
+                                        "pontos_obtidos"
+                                ),
+                                resultSet
+                                        .getTimestamp(
+                                                "data_hora_registro"
+                                        )
+                                        .toLocalDateTime()
+                        )
+                );
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Erro ao listar historico: "
+                            + e.getMessage()
+            );
+
+        } finally {
+            fechar(
+                    resultSet,
+                    statement,
+                    connection
+            );
+        }
+
+        return historico;
+    }
+
     public boolean atualizar(RegistroAcao registro) {
         Connection connection = null;
         PreparedStatement statement = null;
 
-        String sql = "UPDATE TB_REGISTRO_ACAO SET "
-                + "id_acao = ?, id_usuario = ?, "
-                + "data_hora_registro = ?, status_validacao = ?, "
-                + "pontos_obtidos = ?, latitude = ?, longitude = ? "
-                + "WHERE id_registro = ?";
+        String sql =
+                "UPDATE TB_REGISTRO_ACAO SET "
+                        + "id_acao = ?, "
+                        + "id_usuario = ?, "
+                        + "data_hora_registro = ?, "
+                        + "status_validacao = ?, "
+                        + "pontos_obtidos = ?, "
+                        + "latitude = ?, "
+                        + "longitude = ? "
+                        + "WHERE id_registro = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -140,7 +230,8 @@ public class RegistroAcaoDAO {
 
         } catch (SQLException e) {
             System.out.println(
-                    "Erro ao atualizar registro: " + e.getMessage()
+                    "Erro ao atualizar registro: "
+                            + e.getMessage()
             );
             return false;
 
@@ -154,7 +245,8 @@ public class RegistroAcaoDAO {
         PreparedStatement statement = null;
 
         String sql =
-                "DELETE FROM TB_REGISTRO_ACAO WHERE id_registro = ?";
+                "DELETE FROM TB_REGISTRO_ACAO "
+                        + "WHERE id_registro = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -165,7 +257,8 @@ public class RegistroAcaoDAO {
 
         } catch (SQLException e) {
             System.out.println(
-                    "Erro ao excluir registro: " + e.getMessage()
+                    "Erro ao excluir registro: "
+                            + e.getMessage()
             );
             return false;
 
@@ -174,83 +267,135 @@ public class RegistroAcaoDAO {
         }
     }
 
-    private void preencher(PreparedStatement statement,
-                           RegistroAcao registro,
-                           boolean incluirId) throws SQLException {
+    private void preencher(
+            PreparedStatement statement,
+            RegistroAcao registro,
+            boolean incluirId)
+            throws SQLException {
 
-        statement.setInt(1, registro.getAcaoId());
-        statement.setInt(2, registro.getUsuarioId());
+        statement.setInt(
+                1,
+                registro.getAcaoId()
+        );
+
+        statement.setInt(
+                2,
+                registro.getUsuarioId()
+        );
 
         statement.setTimestamp(
                 3,
-                Timestamp.valueOf(registro.getDataHoraRegistro())
+                Timestamp.valueOf(
+                        registro.getDataHoraRegistro()
+                )
         );
 
         statement.setString(
                 4,
-                registro.getStatusValidacao().toUpperCase()
+                registro
+                        .getStatusValidacao()
+                        .toUpperCase()
         );
 
-        statement.setInt(5, registro.getPontosObtidos());
+        statement.setInt(
+                5,
+                registro.getPontosObtidos()
+        );
 
         if (registro.getLatitude() == null) {
-            statement.setNull(6, Types.DOUBLE);
+            statement.setNull(
+                    6,
+                    Types.DOUBLE
+            );
         } else {
-            statement.setDouble(6, registro.getLatitude());
+            statement.setDouble(
+                    6,
+                    registro.getLatitude()
+            );
         }
 
         if (registro.getLongitude() == null) {
-            statement.setNull(7, Types.DOUBLE);
+            statement.setNull(
+                    7,
+                    Types.DOUBLE
+            );
         } else {
-            statement.setDouble(7, registro.getLongitude());
+            statement.setDouble(
+                    7,
+                    registro.getLongitude()
+            );
         }
 
         if (incluirId) {
-            statement.setInt(8, registro.getId());
+            statement.setInt(
+                    8,
+                    registro.getId()
+            );
         }
     }
 
-    private RegistroAcao montar(ResultSet resultSet)
+    private RegistroAcao montar(
+            ResultSet resultSet)
             throws SQLException {
 
         Number latitudeNumero =
-                (Number) resultSet.getObject("latitude");
+                (Number) resultSet.getObject(
+                        "latitude"
+                );
 
         Number longitudeNumero =
-                (Number) resultSet.getObject("longitude");
+                (Number) resultSet.getObject(
+                        "longitude"
+                );
 
-        Double latitude = latitudeNumero == null
-                ? null
-                : latitudeNumero.doubleValue();
+        Double latitude =
+                latitudeNumero == null
+                        ? null
+                        : latitudeNumero.doubleValue();
 
-        Double longitude = longitudeNumero == null
-                ? null
-                : longitudeNumero.doubleValue();
+        Double longitude =
+                longitudeNumero == null
+                        ? null
+                        : longitudeNumero.doubleValue();
 
         return new RegistroAcao(
-                resultSet.getInt("id_registro"),
-                resultSet.getInt("id_acao"),
-                resultSet.getInt("id_usuario"),
+                resultSet.getInt(
+                        "id_registro"
+                ),
+                resultSet.getInt(
+                        "id_acao"
+                ),
+                resultSet.getInt(
+                        "id_usuario"
+                ),
                 resultSet
-                        .getTimestamp("data_hora_registro")
+                        .getTimestamp(
+                                "data_hora_registro"
+                        )
                         .toLocalDateTime(),
-                resultSet.getString("status_validacao"),
-                resultSet.getInt("pontos_obtidos"),
+                resultSet.getString(
+                        "status_validacao"
+                ),
+                resultSet.getInt(
+                        "pontos_obtidos"
+                ),
                 latitude,
                 longitude
         );
     }
 
-    private void fechar(ResultSet resultSet,
-                        PreparedStatement statement,
-                        Connection connection) {
+    private void fechar(
+            ResultSet resultSet,
+            PreparedStatement statement,
+            Connection connection) {
 
         if (resultSet != null) {
             try {
                 resultSet.close();
             } catch (SQLException e) {
                 System.out.println(
-                        "Erro ao fechar ResultSet: " + e.getMessage()
+                        "Erro ao fechar ResultSet: "
+                                + e.getMessage()
                 );
             }
         }
@@ -271,7 +416,8 @@ public class RegistroAcaoDAO {
                 connection.close();
             } catch (SQLException e) {
                 System.out.println(
-                        "Erro ao fechar Connection: " + e.getMessage()
+                        "Erro ao fechar Connection: "
+                                + e.getMessage()
                 );
             }
         }
