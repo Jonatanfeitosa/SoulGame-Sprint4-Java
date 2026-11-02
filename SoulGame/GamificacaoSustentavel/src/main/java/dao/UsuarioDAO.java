@@ -18,7 +18,8 @@ public class UsuarioDAO {
         ResultSet resultSet = null;
 
         String sql = "INSERT INTO TB_USUARIO "
-                + "(nome_usuario, email_usuario, cpf_usuario, senha_usuario, cidade_usuario, bairro_usuario, total_pontos_usuario) "
+                + "(nome_usuario, email_usuario, cpf_usuario, senha_usuario, "
+                + "cidade_usuario, bairro_usuario, total_pontos_usuario) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try {
@@ -42,7 +43,9 @@ public class UsuarioDAO {
             return true;
 
         } catch (SQLException e) {
-            System.out.println("Erro ao criar usuario: " + e.getMessage());
+            System.out.println(
+                    "Erro ao criar usuario: " + e.getMessage()
+            );
             return false;
 
         } finally {
@@ -55,12 +58,14 @@ public class UsuarioDAO {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
 
-        String sql = "SELECT * FROM TB_USUARIO WHERE id_usuario = ?";
+        String sql =
+                "SELECT * FROM TB_USUARIO WHERE id_usuario = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
             statement = connection.prepareStatement(sql);
             statement.setInt(1, id);
+
             resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
@@ -70,7 +75,47 @@ public class UsuarioDAO {
             return null;
 
         } catch (SQLException e) {
-            System.out.println("Erro ao buscar usuario: " + e.getMessage());
+            System.out.println(
+                    "Erro ao buscar usuario: " + e.getMessage()
+            );
+            return null;
+
+        } finally {
+            fechar(resultSet, statement, connection);
+        }
+    }
+
+    public Usuario buscarPorEmailESenha(
+            String email,
+            String senha) {
+
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+
+        String sql = "SELECT * FROM TB_USUARIO "
+                + "WHERE email_usuario = ? "
+                + "AND senha_usuario = ?";
+
+        try {
+            connection = ConexaoOracleProjeto.conectar();
+            statement = connection.prepareStatement(sql);
+
+            statement.setString(1, email);
+            statement.setString(2, senha);
+
+            resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return montar(resultSet);
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            System.out.println(
+                    "Erro ao realizar login: " + e.getMessage()
+            );
             return null;
 
         } finally {
@@ -82,9 +127,11 @@ public class UsuarioDAO {
         Connection connection = null;
         PreparedStatement statement = null;
         ResultSet resultSet = null;
+
         List<Usuario> lista = new ArrayList<>();
 
-        String sql = "SELECT * FROM TB_USUARIO ORDER BY total_pontos_usuario DESC";
+        String sql = "SELECT * FROM TB_USUARIO "
+                + "ORDER BY total_pontos_usuario DESC";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -96,7 +143,9 @@ public class UsuarioDAO {
             }
 
         } catch (SQLException e) {
-            System.out.println("Erro ao listar usuarios: " + e.getMessage());
+            System.out.println(
+                    "Erro ao listar usuarios: " + e.getMessage()
+            );
 
         } finally {
             fechar(resultSet, statement, connection);
@@ -110,8 +159,13 @@ public class UsuarioDAO {
         PreparedStatement statement = null;
 
         String sql = "UPDATE TB_USUARIO SET "
-                + "nome_usuario = ?, email_usuario = ?, cpf_usuario = ?, senha_usuario = ?, "
-                + "cidade_usuario = ?, bairro_usuario = ?, total_pontos_usuario = ? "
+                + "nome_usuario = ?, "
+                + "email_usuario = ?, "
+                + "cpf_usuario = ?, "
+                + "senha_usuario = ?, "
+                + "cidade_usuario = ?, "
+                + "bairro_usuario = ?, "
+                + "total_pontos_usuario = ? "
                 + "WHERE id_usuario = ?";
 
         try {
@@ -123,7 +177,9 @@ public class UsuarioDAO {
             return statement.executeUpdate() == 1;
 
         } catch (SQLException e) {
-            System.out.println("Erro ao atualizar usuario: " + e.getMessage());
+            System.out.println(
+                    "Erro ao atualizar usuario: " + e.getMessage()
+            );
             return false;
 
         } finally {
@@ -135,7 +191,8 @@ public class UsuarioDAO {
         Connection connection = null;
         PreparedStatement statement = null;
 
-        String sql = "DELETE FROM TB_USUARIO WHERE id_usuario = ?";
+        String sql =
+                "DELETE FROM TB_USUARIO WHERE id_usuario = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -145,7 +202,9 @@ public class UsuarioDAO {
             return statement.executeUpdate() == 1;
 
         } catch (SQLException e) {
-            System.out.println("Erro ao excluir usuario: " + e.getMessage());
+            System.out.println(
+                    "Erro ao excluir usuario: " + e.getMessage()
+            );
             return false;
 
         } finally {
@@ -153,9 +212,10 @@ public class UsuarioDAO {
         }
     }
 
-    private void preencher(PreparedStatement statement,
-                           Usuario usuario,
-                           boolean incluirId) throws SQLException {
+    private void preencher(
+            PreparedStatement statement,
+            Usuario usuario,
+            boolean incluirId) throws SQLException {
 
         statement.setString(1, usuario.getNome());
         statement.setString(2, usuario.getEmail());
@@ -170,7 +230,9 @@ public class UsuarioDAO {
         }
     }
 
-    private Usuario montar(ResultSet resultSet) throws SQLException {
+    private Usuario montar(ResultSet resultSet)
+            throws SQLException {
+
         return new Usuario(
                 resultSet.getInt("id_usuario"),
                 resultSet.getString("nome_usuario"),
@@ -183,16 +245,18 @@ public class UsuarioDAO {
         );
     }
 
-    private void fechar(ResultSet resultSet,
-                        PreparedStatement statement,
-                        Connection connection) {
+    private void fechar(
+            ResultSet resultSet,
+            PreparedStatement statement,
+            Connection connection) {
 
         if (resultSet != null) {
             try {
                 resultSet.close();
             } catch (SQLException e) {
                 System.out.println(
-                        "Erro ao fechar ResultSet: " + e.getMessage()
+                        "Erro ao fechar ResultSet: "
+                                + e.getMessage()
                 );
             }
         }
@@ -202,7 +266,8 @@ public class UsuarioDAO {
                 statement.close();
             } catch (SQLException e) {
                 System.out.println(
-                        "Erro ao fechar PreparedStatement: " + e.getMessage()
+                        "Erro ao fechar PreparedStatement: "
+                                + e.getMessage()
                 );
             }
         }
@@ -212,7 +277,8 @@ public class UsuarioDAO {
                 connection.close();
             } catch (SQLException e) {
                 System.out.println(
-                        "Erro ao fechar Connection: " + e.getMessage()
+                        "Erro ao fechar Connection: "
+                                + e.getMessage()
                 );
             }
         }
