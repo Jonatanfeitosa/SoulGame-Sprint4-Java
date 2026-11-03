@@ -1,5 +1,7 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDate;
 
 public class Usuario {
@@ -8,7 +10,10 @@ public class Usuario {
     private String nome;
     private String email;
     private String cpf;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
+
     private String telefone;
     private String cidade;
     private String estado;
