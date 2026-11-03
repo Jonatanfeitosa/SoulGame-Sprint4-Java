@@ -1,4 +1,21 @@
+/* =========================================================
+   SOULGAME - SPRINT 4
+   SCRIPT DE ESTRUTURA DO BANCO DE DADOS
+   Oracle Database
+   Estrutura consolidada a partir do banco funcional
+   ========================================================= */
 
+
+/* =========================================================
+   LIMPEZA DAS TABELAS
+   Ordem inversa das dependencias
+   ========================================================= */
+
+DROP TABLE TB_CAMPEONATO_PARTICIPANTE CASCADE CONSTRAINTS;
+DROP TABLE TB_CAMPEONATO CASCADE CONSTRAINTS;
+DROP TABLE TB_DESAFIO_AGENDADO CASCADE CONSTRAINTS;
+DROP TABLE TB_USUARIO_CONQUISTA CASCADE CONSTRAINTS;
+DROP TABLE TB_CONQUISTA CASCADE CONSTRAINTS;
 DROP TABLE TB_VALIDACAO CASCADE CONSTRAINTS;
 DROP TABLE TB_EVIDENCIA CASCADE CONSTRAINTS;
 DROP TABLE TB_REGISTRO_ACAO CASCADE CONSTRAINTS;
@@ -7,116 +24,613 @@ DROP TABLE TB_ACAO_SUSTENTAVEL CASCADE CONSTRAINTS;
 DROP TABLE TB_PARCEIRO CASCADE CONSTRAINTS;
 DROP TABLE TB_GRUPO CASCADE CONSTRAINTS;
 DROP TABLE TB_USUARIO CASCADE CONSTRAINTS;
+DROP TABLE TB_ODS CASCADE CONSTRAINTS;
 
+
+/* =========================================================
+   ODS
+   ========================================================= */
+
+CREATE TABLE TB_ODS (
+    ID_ODS NUMBER(*,0) NOT NULL,
+    NOME_ODS VARCHAR2(150) NOT NULL,
+    DESCRICAO_ODS VARCHAR2(300),
+    COR_HEX VARCHAR2(7),
+    ICONE VARCHAR2(100),
+
+    CONSTRAINT PK_TB_ODS
+        PRIMARY KEY (ID_ODS),
+
+    CONSTRAINT UK_ODS_NOME
+        UNIQUE (NOME_ODS)
+);
+
+
+/* =========================================================
+   USUARIO
+   ========================================================= */
 
 CREATE TABLE TB_USUARIO (
-    id_usuario           INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nome_usuario         VARCHAR2(100) NOT NULL,
-    email_usuario        VARCHAR2(100) NOT NULL,
-    cpf_usuario          VARCHAR2(11)  NOT NULL,
-    senha_usuario        VARCHAR2(100) NOT NULL,
-    cidade_usuario       VARCHAR2(100) NOT NULL,
-    bairro_usuario       VARCHAR2(100) NOT NULL,
-    total_pontos_usuario INTEGER       DEFAULT 0 NOT NULL,
-    CONSTRAINT PK_TB_USUARIO PRIMARY KEY (id_usuario),
-    CONSTRAINT UK_USUARIO_CPF UNIQUE (cpf_usuario),
-    CONSTRAINT UK_USUARIO_EMAIL UNIQUE (email_usuario),
-    CONSTRAINT CK_USUARIO_PONTOS CHECK (total_pontos_usuario >= 0)
+    ID_USUARIO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_USUARIO VARCHAR2(100) NOT NULL,
+    EMAIL_USUARIO VARCHAR2(100) NOT NULL,
+    CPF_USUARIO VARCHAR2(11),
+    SENHA_USUARIO VARCHAR2(100) NOT NULL,
+    TELEFONE_USUARIO VARCHAR2(30),
+    CIDADE_USUARIO VARCHAR2(100) NOT NULL,
+    ESTADO_USUARIO VARCHAR2(2),
+    BAIRRO_USUARIO VARCHAR2(100),
+    TIPO_USUARIO VARCHAR2(30) NOT NULL,
+
+    TOTAL_PONTOS_USUARIO NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    NIVEL_USUARIO NUMBER(*,0)
+        DEFAULT 1 NOT NULL,
+
+    STREAK_USUARIO NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    CODIGO_INDICACAO VARCHAR2(50),
+    INDICADO_POR NUMBER(*,0),
+    AVATAR_URL VARCHAR2(300),
+    AVATAR_TIPO VARCHAR2(30),
+    DATA_NASCIMENTO DATE,
+
+    CONSTRAINT PK_TB_USUARIO
+        PRIMARY KEY (ID_USUARIO),
+
+    CONSTRAINT UK_USUARIO_EMAIL
+        UNIQUE (EMAIL_USUARIO),
+
+    CONSTRAINT UK_USUARIO_CPF
+        UNIQUE (CPF_USUARIO),
+
+    CONSTRAINT UK_USUARIO_CODIGO_IND
+        UNIQUE (CODIGO_INDICACAO),
+
+    CONSTRAINT CK_USUARIO_PONTOS
+        CHECK (TOTAL_PONTOS_USUARIO >= 0),
+
+    CONSTRAINT CK_USUARIO_NIVEL
+        CHECK (NIVEL_USUARIO >= 1),
+
+    CONSTRAINT CK_USUARIO_STREAK
+        CHECK (STREAK_USUARIO >= 0),
+
+    CONSTRAINT CK_USUARIO_TIPO
+        CHECK (
+            TIPO_USUARIO IN (
+                'soulgamer',
+                'soulfluencer',
+                'soulhealth',
+                'ecosoul',
+                'admin'
+            )
+        ),
+
+    CONSTRAINT FK_USUARIO_INDICADOR
+        FOREIGN KEY (INDICADO_POR)
+        REFERENCES TB_USUARIO (ID_USUARIO)
 );
 
+
+/* =========================================================
+   GRUPO
+   ========================================================= */
 
 CREATE TABLE TB_GRUPO (
-    id_grupo               INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nome_grupo             VARCHAR2(100) NOT NULL,
-    tipo_grupo             VARCHAR2(30)  NOT NULL,
-    cidade_grupo           VARCHAR2(100),
-    bairro_grupo           VARCHAR2(100),
-    pontos_minimos_entrada INTEGER       DEFAULT 0 NOT NULL,
-    data_criacao           DATE          DEFAULT SYSDATE NOT NULL,
-    CONSTRAINT PK_TB_GRUPO PRIMARY KEY (id_grupo),
-    CONSTRAINT CK_GRUPO_TIPO CHECK (tipo_grupo IN ('ABERTO', 'PRIVADO')),
-    CONSTRAINT CK_GRUPO_PTS_MIN CHECK (pontos_minimos_entrada >= 0)
+    ID_GRUPO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_GRUPO VARCHAR2(100) NOT NULL,
+    TIPO_GRUPO VARCHAR2(30) NOT NULL,
+    CIDADE_GRUPO VARCHAR2(100),
+    BAIRRO_GRUPO VARCHAR2(100),
+
+    PONTOS_MINIMOS_ENTRADA NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    DATA_CRIACAO DATE
+        DEFAULT SYSDATE NOT NULL,
+
+    CONSTRAINT PK_TB_GRUPO
+        PRIMARY KEY (ID_GRUPO),
+
+    CONSTRAINT CK_GRUPO_TIPO
+        CHECK (
+            TIPO_GRUPO IN ('ABERTO', 'PRIVADO')
+        ),
+
+    CONSTRAINT CK_GRUPO_PTS_MIN
+        CHECK (
+            PONTOS_MINIMOS_ENTRADA >= 0
+        )
 );
 
+
+/* =========================================================
+   PARCEIRO
+   ========================================================= */
 
 CREATE TABLE TB_PARCEIRO (
-    id_parceiro     INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nome_parceiro   VARCHAR2(100) NOT NULL,
-    tipo_parceiro   VARCHAR2(50)  NOT NULL,
-    cnpj_parceiro   VARCHAR2(14)  NOT NULL,
-    cidade_parceiro VARCHAR2(100) NOT NULL,
-    status_parceiro VARCHAR2(30)  DEFAULT 'ATIVO' NOT NULL,
-    CONSTRAINT PK_TB_PARCEIRO PRIMARY KEY (id_parceiro),
-    CONSTRAINT UK_PARCEIRO_CNPJ UNIQUE (cnpj_parceiro),
-    CONSTRAINT CK_PARCEIRO_STATUS CHECK (status_parceiro IN ('ATIVO', 'INATIVO', 'EM_ANALISE'))
+    ID_PARCEIRO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_PARCEIRO VARCHAR2(100) NOT NULL,
+    TIPO_PARCEIRO VARCHAR2(50) NOT NULL,
+    CNPJ_PARCEIRO VARCHAR2(14) NOT NULL,
+    CIDADE_PARCEIRO VARCHAR2(100) NOT NULL,
+
+    STATUS_PARCEIRO VARCHAR2(30)
+        DEFAULT 'ATIVO' NOT NULL,
+
+    CONSTRAINT PK_TB_PARCEIRO
+        PRIMARY KEY (ID_PARCEIRO),
+
+    CONSTRAINT UK_PARCEIRO_CNPJ
+        UNIQUE (CNPJ_PARCEIRO),
+
+    CONSTRAINT CK_PARCEIRO_STATUS
+        CHECK (
+            STATUS_PARCEIRO IN (
+                'ATIVO',
+                'INATIVO',
+                'EM_ANALISE'
+            )
+        )
 );
 
+
+/* =========================================================
+   ACAO SUSTENTAVEL
+   ========================================================= */
 
 CREATE TABLE TB_ACAO_SUSTENTAVEL (
-    id_acao              INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nome_acao            VARCHAR2(100) NOT NULL,
-    objetivo_sustentavel VARCHAR2(100) NOT NULL,
-    pontuacao_base       INTEGER       NOT NULL,
-    nivel_dificuldade    VARCHAR2(50)  NOT NULL,
-    descricao_acao       VARCHAR2(300),
-    CONSTRAINT PK_TB_ACAO_SUSTENTAVEL PRIMARY KEY (id_acao),
-    CONSTRAINT CK_ACAO_PONTUACAO CHECK (pontuacao_base > 0),
-    CONSTRAINT CK_ACAO_DIFICULDADE CHECK (nivel_dificuldade IN ('BAIXA', 'MEDIA', 'ALTA'))
+    ID_ACAO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_ACAO VARCHAR2(150) NOT NULL,
+    OBJETIVO_SUSTENTAVEL VARCHAR2(150) NOT NULL,
+    PONTUACAO_BASE NUMBER(*,0) NOT NULL,
+    NIVEL_DIFICULDADE VARCHAR2(50) NOT NULL,
+    DESCRICAO_ACAO VARCHAR2(300),
+    SLUG_ACAO VARCHAR2(100) NOT NULL,
+    ID_ODS NUMBER(*,0),
+
+    CONSTRAINT PK_TB_ACAO_SUSTENTAVEL
+        PRIMARY KEY (ID_ACAO),
+
+    CONSTRAINT UK_ACAO_SLUG
+        UNIQUE (SLUG_ACAO),
+
+    CONSTRAINT CK_ACAO_PONTUACAO
+        CHECK (
+            PONTUACAO_BASE > 0
+        ),
+
+    CONSTRAINT CK_ACAO_DIFICULDADE
+        CHECK (
+            NIVEL_DIFICULDADE IN (
+                'BAIXA',
+                'MEDIA',
+                'ALTA'
+            )
+        ),
+
+    CONSTRAINT FK_ACAO_ODS
+        FOREIGN KEY (ID_ODS)
+        REFERENCES TB_ODS (ID_ODS)
 );
 
+
+/* =========================================================
+   USUARIO x GRUPO
+   ========================================================= */
 
 CREATE TABLE TB_USUARIO_GRUPO (
-    id_usuario          INTEGER      NOT NULL,
-    id_grupo            INTEGER      NOT NULL,
-    data_entrada        DATE         DEFAULT SYSDATE NOT NULL,
-    pontos_no_grupo     INTEGER      DEFAULT 0 NOT NULL,
-    status_participacao VARCHAR2(30) DEFAULT 'ATIVO' NOT NULL,
-    CONSTRAINT PK_TB_USUARIO_GRUPO PRIMARY KEY (id_usuario, id_grupo),
-    CONSTRAINT FK_US_GRP_USUARIO FOREIGN KEY (id_usuario) REFERENCES TB_USUARIO (id_usuario),
-    CONSTRAINT FK_US_GRP_GRUPO FOREIGN KEY (id_grupo) REFERENCES TB_GRUPO (id_grupo),
-    CONSTRAINT CK_US_GRP_STATUS CHECK (status_participacao IN ('ATIVO', 'INATIVO', 'SUSPENSO'))
+    ID_USUARIO NUMBER(*,0) NOT NULL,
+    ID_GRUPO NUMBER(*,0) NOT NULL,
+
+    DATA_ENTRADA DATE
+        DEFAULT SYSDATE NOT NULL,
+
+    PONTOS_NO_GRUPO NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    STATUS_PARTICIPACAO VARCHAR2(30)
+        DEFAULT 'ATIVO' NOT NULL,
+
+    CONSTRAINT PK_TB_USUARIO_GRUPO
+        PRIMARY KEY (
+            ID_USUARIO,
+            ID_GRUPO
+        ),
+
+    CONSTRAINT CK_US_GRP_STATUS
+        CHECK (
+            STATUS_PARTICIPACAO IN (
+                'ATIVO',
+                'INATIVO',
+                'SUSPENSO'
+            )
+        ),
+
+    CONSTRAINT FK_US_GRP_USUARIO
+        FOREIGN KEY (ID_USUARIO)
+        REFERENCES TB_USUARIO (ID_USUARIO),
+
+    CONSTRAINT FK_US_GRP_GRUPO
+        FOREIGN KEY (ID_GRUPO)
+        REFERENCES TB_GRUPO (ID_GRUPO)
 );
 
+
+/* =========================================================
+   REGISTRO DE ACAO
+   ========================================================= */
 
 CREATE TABLE TB_REGISTRO_ACAO (
-    id_registro        INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    id_acao            INTEGER       NOT NULL,
-    id_usuario         INTEGER       NOT NULL,
-    data_hora_registro TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    status_validacao   VARCHAR2(30)  DEFAULT 'PENDENTE' NOT NULL,
-    pontos_obtidos     INTEGER       DEFAULT 0 NOT NULL,
-    latitude           NUMBER(10,6),
-    longitude          NUMBER(10,6),
-    CONSTRAINT PK_TB_REGISTRO_ACAO PRIMARY KEY (id_registro),
-    CONSTRAINT FK_REG_ACAO_SUST FOREIGN KEY (id_acao) REFERENCES TB_ACAO_SUSTENTAVEL (id_acao),
-    CONSTRAINT FK_REG_ACAO_USUARIO FOREIGN KEY (id_usuario) REFERENCES TB_USUARIO (id_usuario),
-    CONSTRAINT CK_REG_STATUS CHECK (status_validacao IN ('PENDENTE', 'VALIDADO', 'REJEITADO'))
+    ID_REGISTRO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    ID_ACAO NUMBER(*,0) NOT NULL,
+    ID_USUARIO NUMBER(*,0) NOT NULL,
+
+    DATA_HORA_REGISTRO TIMESTAMP(6)
+        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    STATUS_VALIDACAO VARCHAR2(30)
+        DEFAULT 'PENDENTE' NOT NULL,
+
+    PONTOS_OBTIDOS NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    LATITUDE NUMBER(10,6),
+    LONGITUDE NUMBER(10,6),
+
+    CONSTRAINT PK_TB_REGISTRO_ACAO
+        PRIMARY KEY (ID_REGISTRO),
+
+    CONSTRAINT CK_REG_STATUS
+        CHECK (
+            STATUS_VALIDACAO IN (
+                'PENDENTE',
+                'VALIDADO',
+                'REJEITADO'
+            )
+        ),
+
+    CONSTRAINT CK_REG_PONTOS
+        CHECK (
+            PONTOS_OBTIDOS >= 0
+        ),
+
+    CONSTRAINT FK_REG_ACAO_SUST
+        FOREIGN KEY (ID_ACAO)
+        REFERENCES TB_ACAO_SUSTENTAVEL (ID_ACAO),
+
+    CONSTRAINT FK_REG_ACAO_USUARIO
+        FOREIGN KEY (ID_USUARIO)
+        REFERENCES TB_USUARIO (ID_USUARIO)
 );
 
+
+/* =========================================================
+   EVIDENCIA
+   ========================================================= */
 
 CREATE TABLE TB_EVIDENCIA (
-    id_evidencia        INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    id_registro         INTEGER       NOT NULL,
-    tipo_evidencia      VARCHAR2(50)  NOT NULL,
-    url_arquivo         VARCHAR2(300) NOT NULL,
-    data_hora_envio     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    descricao_evidencia VARCHAR2(300),
-    CONSTRAINT PK_TB_EVIDENCIA PRIMARY KEY (id_evidencia),
-    CONSTRAINT FK_EVID_REG_ACAO FOREIGN KEY (id_registro) REFERENCES TB_REGISTRO_ACAO (id_registro),
-    CONSTRAINT CK_EVID_TIPO CHECK (tipo_evidencia IN ('FOTO', 'VIDEO', 'DOCUMENTO', 'QR_CODE'))
+    ID_EVIDENCIA NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    ID_REGISTRO NUMBER(*,0) NOT NULL,
+    TIPO_EVIDENCIA VARCHAR2(50) NOT NULL,
+    URL_ARQUIVO VARCHAR2(300) NOT NULL,
+
+    DATA_HORA_ENVIO TIMESTAMP(6)
+        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    DESCRICAO_EVIDENCIA VARCHAR2(300),
+    HASH_EVIDENCIA VARCHAR2(64),
+
+    CONSTRAINT PK_TB_EVIDENCIA
+        PRIMARY KEY (ID_EVIDENCIA),
+
+    CONSTRAINT UK_EVIDENCIA_HASH
+        UNIQUE (HASH_EVIDENCIA),
+
+    CONSTRAINT CK_EVID_TIPO
+        CHECK (
+            TIPO_EVIDENCIA IN (
+                'FOTO',
+                'VIDEO',
+                'DOCUMENTO',
+                'QR_CODE'
+            )
+        ),
+
+    CONSTRAINT FK_EVID_REG_ACAO
+        FOREIGN KEY (ID_REGISTRO)
+        REFERENCES TB_REGISTRO_ACAO (ID_REGISTRO)
 );
 
 
+/* =========================================================
+   VALIDACAO
+   ========================================================= */
+
 CREATE TABLE TB_VALIDACAO (
-    id_validacao         INTEGER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    id_parceiro          INTEGER       NOT NULL,
-    id_registro          INTEGER       NOT NULL,
-    data_hora_validacao  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    resultado_validacao  VARCHAR2(30)  NOT NULL,
-    observacao_validacao VARCHAR2(300),
-    CONSTRAINT PK_TB_VALIDACAO PRIMARY KEY (id_validacao),
-    CONSTRAINT UK_VALIDACAO_REGISTRO UNIQUE (id_registro),
-    CONSTRAINT FK_VALID_PARCEIRO FOREIGN KEY (id_parceiro) REFERENCES TB_PARCEIRO (id_parceiro),
-    CONSTRAINT FK_VALID_REG_ACAO FOREIGN KEY (id_registro) REFERENCES TB_REGISTRO_ACAO (id_registro),
-    CONSTRAINT CK_VALID_RESULTADO CHECK (resultado_validacao IN ('APROVADO', 'REPROVADO'))
+    ID_VALIDACAO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    ID_PARCEIRO NUMBER(*,0) NOT NULL,
+    ID_REGISTRO NUMBER(*,0) NOT NULL,
+
+    DATA_HORA_VALIDACAO TIMESTAMP(6)
+        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    RESULTADO_VALIDACAO VARCHAR2(30) NOT NULL,
+    OBSERVACAO_VALIDACAO VARCHAR2(300),
+
+    CONSTRAINT PK_TB_VALIDACAO
+        PRIMARY KEY (ID_VALIDACAO),
+
+    CONSTRAINT UK_VALIDACAO_REGISTRO
+        UNIQUE (ID_REGISTRO),
+
+    CONSTRAINT CK_VALID_RESULTADO
+        CHECK (
+            RESULTADO_VALIDACAO IN (
+                'APROVADO',
+                'REPROVADO'
+            )
+        ),
+
+    CONSTRAINT FK_VALID_PARCEIRO
+        FOREIGN KEY (ID_PARCEIRO)
+        REFERENCES TB_PARCEIRO (ID_PARCEIRO),
+
+    CONSTRAINT FK_VALID_REG_ACAO
+        FOREIGN KEY (ID_REGISTRO)
+        REFERENCES TB_REGISTRO_ACAO (ID_REGISTRO)
+);
+
+
+/* =========================================================
+   CONQUISTA
+   ========================================================= */
+
+CREATE TABLE TB_CONQUISTA (
+    ID_CONQUISTA NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_CONQUISTA VARCHAR2(100) NOT NULL,
+    DESCRICAO_CONQUISTA VARCHAR2(300) NOT NULL,
+    TIPO_CONQUISTA VARCHAR2(50),
+    CRITERIO_VALOR NUMBER(*,0),
+    ID_ODS NUMBER(*,0),
+    SLUG_ACAO_RELACIONADA VARCHAR2(100),
+
+    STATUS_CONQUISTA VARCHAR2(20)
+        DEFAULT 'ATIVA' NOT NULL,
+
+    CONSTRAINT PK_TB_CONQUISTA
+        PRIMARY KEY (ID_CONQUISTA),
+
+    CONSTRAINT UK_CONQUISTA_NOME
+        UNIQUE (NOME_CONQUISTA),
+
+    CONSTRAINT CK_CONQUISTA_STATUS
+        CHECK (
+            STATUS_CONQUISTA IN (
+                'ATIVA',
+                'INATIVA'
+            )
+        ),
+
+    CONSTRAINT FK_CONQUISTA_ODS
+        FOREIGN KEY (ID_ODS)
+        REFERENCES TB_ODS (ID_ODS)
+);
+
+
+/* =========================================================
+   USUARIO x CONQUISTA
+   ========================================================= */
+
+CREATE TABLE TB_USUARIO_CONQUISTA (
+    ID_USUARIO NUMBER(*,0) NOT NULL,
+    ID_CONQUISTA NUMBER(*,0) NOT NULL,
+
+    DATA_DESBLOQUEIO TIMESTAMP(6)
+        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT PK_TB_USUARIO_CONQUISTA
+        PRIMARY KEY (
+            ID_USUARIO,
+            ID_CONQUISTA
+        ),
+
+    CONSTRAINT FK_US_CONQ_USUARIO
+        FOREIGN KEY (ID_USUARIO)
+        REFERENCES TB_USUARIO (ID_USUARIO),
+
+    CONSTRAINT FK_US_CONQ_CONQUISTA
+        FOREIGN KEY (ID_CONQUISTA)
+        REFERENCES TB_CONQUISTA (ID_CONQUISTA)
+);
+
+
+/* =========================================================
+   DESAFIO AGENDADO
+   ========================================================= */
+
+CREATE TABLE TB_DESAFIO_AGENDADO (
+    ID_DESAFIO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    ID_USUARIO NUMBER(*,0) NOT NULL,
+    ID_ACAO NUMBER(*,0) NOT NULL,
+
+    DATA_AGENDAMENTO DATE
+        DEFAULT SYSDATE NOT NULL,
+
+    STATUS_DESAFIO VARCHAR2(30)
+        DEFAULT 'AGENDADO' NOT NULL,
+
+    CONSTRAINT PK_TB_DESAFIO_AGENDADO
+        PRIMARY KEY (ID_DESAFIO),
+
+    CONSTRAINT CK_DESAFIO_STATUS
+        CHECK (
+            STATUS_DESAFIO IN (
+                'AGENDADO',
+                'CONCLUIDO',
+                'CANCELADO'
+            )
+        ),
+
+    CONSTRAINT FK_DESAFIO_USUARIO
+        FOREIGN KEY (ID_USUARIO)
+        REFERENCES TB_USUARIO (ID_USUARIO),
+
+    CONSTRAINT FK_DESAFIO_ACAO
+        FOREIGN KEY (ID_ACAO)
+        REFERENCES TB_ACAO_SUSTENTAVEL (ID_ACAO)
+);
+
+
+/* =========================================================
+   CAMPEONATO
+   ========================================================= */
+
+CREATE TABLE TB_CAMPEONATO (
+    ID_CAMPEONATO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    NOME_CAMPEONATO VARCHAR2(150) NOT NULL,
+    ESCOPO VARCHAR2(30) NOT NULL,
+    ESTADO_CAMPEONATO VARCHAR2(2),
+    ID_ODS_RELACIONADO NUMBER(*,0),
+    DATA_INICIO DATE NOT NULL,
+    DATA_FIM DATE NOT NULL,
+    PREMIACAO VARCHAR2(300),
+    ID_USUARIO_CRIADOR NUMBER(*,0),
+
+    STATUS_CAMPEONATO VARCHAR2(30)
+        DEFAULT 'ATIVO' NOT NULL,
+
+    CONSTRAINT PK_TB_CAMPEONATO
+        PRIMARY KEY (ID_CAMPEONATO),
+
+    CONSTRAINT UK_CAMPEONATO_NOME
+        UNIQUE (NOME_CAMPEONATO),
+
+    CONSTRAINT CK_CAMPEONATO_ESCOPO
+        CHECK (
+            ESCOPO IN (
+                'REGIONAL',
+                'ESTADUAL',
+                'NACIONAL'
+            )
+        ),
+
+    CONSTRAINT CK_CAMPEONATO_STATUS
+        CHECK (
+            STATUS_CAMPEONATO IN (
+                'ATIVO',
+                'ENCERRADO',
+                'CANCELADO'
+            )
+        ),
+
+    CONSTRAINT CK_CAMPEONATO_DATAS
+        CHECK (
+            DATA_FIM >= DATA_INICIO
+        ),
+
+    CONSTRAINT FK_CAMPEONATO_ODS
+        FOREIGN KEY (ID_ODS_RELACIONADO)
+        REFERENCES TB_ODS (ID_ODS),
+
+    CONSTRAINT FK_CAMPEONATO_CRIADOR
+        FOREIGN KEY (ID_USUARIO_CRIADOR)
+        REFERENCES TB_USUARIO (ID_USUARIO)
+);
+
+
+/* =========================================================
+   CAMPEONATO x PARTICIPANTE
+   ========================================================= */
+
+CREATE TABLE TB_CAMPEONATO_PARTICIPANTE (
+    ID_PARTICIPACAO NUMBER(*,0)
+        GENERATED ALWAYS AS IDENTITY
+        START WITH 1
+        INCREMENT BY 1
+        NOT NULL,
+
+    ID_CAMPEONATO NUMBER(*,0) NOT NULL,
+    ID_USUARIO NUMBER(*,0) NOT NULL,
+
+    PONTOS_CAMPEONATO NUMBER(*,0)
+        DEFAULT 0 NOT NULL,
+
+    DATA_INSCRICAO TIMESTAMP(6)
+        DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT PK_TB_CAMPEONATO_PART
+        PRIMARY KEY (ID_PARTICIPACAO),
+
+    CONSTRAINT UK_CAMPEONATO_USUARIO
+        UNIQUE (
+            ID_CAMPEONATO,
+            ID_USUARIO
+        ),
+
+    CONSTRAINT CK_CAMP_PART_PONTOS
+        CHECK (
+            PONTOS_CAMPEONATO >= 0
+        ),
+
+    CONSTRAINT FK_CAMP_PART_CAMPEONATO
+        FOREIGN KEY (ID_CAMPEONATO)
+        REFERENCES TB_CAMPEONATO (ID_CAMPEONATO),
+
+    CONSTRAINT FK_CAMP_PART_USUARIO
+        FOREIGN KEY (ID_USUARIO)
+        REFERENCES TB_USUARIO (ID_USUARIO)
 );
