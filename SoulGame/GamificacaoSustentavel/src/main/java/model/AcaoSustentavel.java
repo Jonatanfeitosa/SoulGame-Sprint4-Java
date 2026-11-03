@@ -10,40 +10,71 @@ public class AcaoSustentavel implements Calculavel {
     private int pontuacaoBase;
     private String nivelDificuldade;
     private String descricao;
+    private String slugAcao;
+    private Integer odsId;
 
     public AcaoSustentavel() {
     }
 
-    public AcaoSustentavel(int id, String nome, String objetivoSustentavel,
-                           int pontuacaoBase, String nivelDificuldade,
-                           String descricao) {
+    public AcaoSustentavel(
+            int id,
+            String nome,
+            String objetivoSustentavel,
+            int pontuacaoBase,
+            String nivelDificuldade,
+            String descricao,
+            String slugAcao,
+            Integer odsId) {
+
         this.id = id;
         this.nome = nome;
         this.objetivoSustentavel = objetivoSustentavel;
         this.pontuacaoBase = pontuacaoBase;
         this.nivelDificuldade = nivelDificuldade;
         this.descricao = descricao;
+        this.slugAcao = slugAcao;
+        this.odsId = odsId;
     }
 
-    public AcaoSustentavel(String nome, String objetivoSustentavel,
-                           int pontuacaoBase, String nivelDificuldade,
-                           String descricao) {
-        this(0, nome, objetivoSustentavel, pontuacaoBase,
-                nivelDificuldade, descricao);
+    public AcaoSustentavel(
+            String nome,
+            String objetivoSustentavel,
+            int pontuacaoBase,
+            String nivelDificuldade,
+            String descricao,
+            String slugAcao,
+            Integer odsId) {
+
+        this(
+                0,
+                nome,
+                objetivoSustentavel,
+                pontuacaoBase,
+                nivelDificuldade,
+                descricao,
+                slugAcao,
+                odsId
+        );
     }
 
     public boolean validarAcao() {
-        return nome != null && !nome.isBlank()
+        return nome != null
+                && !nome.isBlank()
                 && objetivoSustentavel != null
                 && !objetivoSustentavel.isBlank()
                 && pontuacaoBase > 0
                 && ("BAIXA".equalsIgnoreCase(nivelDificuldade)
                 || "MEDIA".equalsIgnoreCase(nivelDificuldade)
-                || "ALTA".equalsIgnoreCase(nivelDificuldade));
+                || "ALTA".equalsIgnoreCase(nivelDificuldade))
+                && slugAcao != null
+                && !slugAcao.isBlank()
+                && odsId != null
+                && odsId > 0;
     }
 
     @Override
     public int calcularPontuacao() {
+
         if (!validarAcao()) {
             return 0;
         }
@@ -105,5 +136,21 @@ public class AcaoSustentavel implements Calculavel {
 
     public void setDescricao(String descricao) {
         this.descricao = descricao;
+    }
+
+    public String getSlugAcao() {
+        return slugAcao;
+    }
+
+    public void setSlugAcao(String slugAcao) {
+        this.slugAcao = slugAcao;
+    }
+
+    public Integer getOdsId() {
+        return odsId;
+    }
+
+    public void setOdsId(Integer odsId) {
+        this.odsId = odsId;
     }
 }

@@ -34,7 +34,9 @@ public class Main {
                 "Consumo responsavel",
                 40,
                 "MEDIA",
-                "Separacao de plastico e papel"
+                "Separacao de plastico e papel",
+                "reciclagem-materiais-teste",
+                12
         );
 
         System.out.println("=== REGRAS DE NEGOCIO ===");

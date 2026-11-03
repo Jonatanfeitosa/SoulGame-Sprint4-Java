@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,8 +20,8 @@ public class AcaoSustentavelDAO {
 
         String sql = "INSERT INTO TB_ACAO_SUSTENTAVEL "
                 + "(nome_acao, objetivo_sustentavel, pontuacao_base, "
-                + "nivel_dificuldade, descricao_acao) "
-                + "VALUES (?, ?, ?, ?, ?)";
+                + "nivel_dificuldade, descricao_acao, slug_acao, id_ods) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -147,7 +148,8 @@ public class AcaoSustentavelDAO {
         String sql = "UPDATE TB_ACAO_SUSTENTAVEL SET "
                 + "nome_acao = ?, objetivo_sustentavel = ?, "
                 + "pontuacao_base = ?, nivel_dificuldade = ?, "
-                + "descricao_acao = ? WHERE id_acao = ?";
+                + "descricao_acao = ?, slug_acao = ?, id_ods = ? "
+                + "WHERE id_acao = ?";
 
         try {
             connection = ConexaoOracleProjeto.conectar();
@@ -204,14 +206,23 @@ public class AcaoSustentavelDAO {
                 acao.getNivelDificuldade().toUpperCase()
         );
         statement.setString(5, acao.getDescricao());
+        statement.setString(6, acao.getSlugAcao());
+
+        if (acao.getOdsId() != null) {
+            statement.setInt(7, acao.getOdsId());
+        } else {
+            statement.setNull(7, Types.NUMERIC);
+        }
 
         if (incluirId) {
-            statement.setInt(6, acao.getId());
+            statement.setInt(8, acao.getId());
         }
     }
 
     private AcaoSustentavel montar(ResultSet resultSet)
             throws SQLException {
+
+        Integer odsId = resultSet.getObject("id_ods", Integer.class);
 
         return new AcaoSustentavel(
                 resultSet.getInt("id_acao"),
@@ -219,7 +230,9 @@ public class AcaoSustentavelDAO {
                 resultSet.getString("objetivo_sustentavel"),
                 resultSet.getInt("pontuacao_base"),
                 resultSet.getString("nivel_dificuldade"),
-                resultSet.getString("descricao_acao")
+                resultSet.getString("descricao_acao"),
+                resultSet.getString("slug_acao"),
+                odsId
         );
     }
 
