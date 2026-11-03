@@ -14,9 +14,6 @@ public class ConquistaDAO {
 
     public List<Conquista> listarTodas() {
 
-        List<Conquista> lista =
-                new ArrayList<>();
-
         String sql =
                 "SELECT "
                         + "id_conquista, "
@@ -31,63 +28,102 @@ public class ConquistaDAO {
                         + "WHERE status_conquista = 'ATIVA' "
                         + "ORDER BY id_conquista";
 
+        return executarConsulta(sql, null);
+    }
+
+    public List<Conquista> listarPorUsuario(int usuarioId) {
+
+        String sql =
+                "SELECT "
+                        + "c.id_conquista, "
+                        + "c.nome_conquista, "
+                        + "c.descricao_conquista, "
+                        + "c.tipo_conquista, "
+                        + "c.criterio_valor, "
+                        + "c.id_ods, "
+                        + "c.slug_acao_relacionada, "
+                        + "c.status_conquista "
+                        + "FROM TB_CONQUISTA c "
+                        + "INNER JOIN TB_USUARIO_CONQUISTA uc "
+                        + "ON uc.id_conquista = c.id_conquista "
+                        + "WHERE uc.id_usuario = ? "
+                        + "AND c.status_conquista = 'ATIVA' "
+                        + "ORDER BY c.id_conquista";
+
+        return executarConsulta(sql, usuarioId);
+    }
+
+    private List<Conquista> executarConsulta(
+            String sql,
+            Integer usuarioId) {
+
+        List<Conquista> lista =
+                new ArrayList<>();
+
         try (
                 Connection connection =
                         ConexaoOracleProjeto.conectar();
 
                 PreparedStatement statement =
-                        connection.prepareStatement(sql);
-
-                ResultSet resultSet =
-                        statement.executeQuery()
+                        connection.prepareStatement(sql)
         ) {
 
-            while (resultSet.next()) {
+            if (usuarioId != null) {
+                statement.setInt(1, usuarioId);
+            }
 
-                Number criterioNumero =
-                        (Number) resultSet.getObject(
-                                "criterio_valor"
-                        );
+            try (
+                    ResultSet resultSet =
+                            statement.executeQuery()
+            ) {
 
-                Number odsNumero =
-                        (Number) resultSet.getObject(
-                                "id_ods"
-                        );
+                while (resultSet.next()) {
 
-                Integer criterioValor =
-                        criterioNumero == null
-                                ? null
-                                : criterioNumero.intValue();
+                    Number criterioNumero =
+                            (Number) resultSet.getObject(
+                                    "criterio_valor"
+                            );
 
-                Integer odsId =
-                        odsNumero == null
-                                ? null
-                                : odsNumero.intValue();
+                    Number odsNumero =
+                            (Number) resultSet.getObject(
+                                    "id_ods"
+                            );
 
-                lista.add(
-                        new Conquista(
-                                resultSet.getInt(
-                                        "id_conquista"
-                                ),
-                                resultSet.getString(
-                                        "nome_conquista"
-                                ),
-                                resultSet.getString(
-                                        "descricao_conquista"
-                                ),
-                                resultSet.getString(
-                                        "tipo_conquista"
-                                ),
-                                criterioValor,
-                                odsId,
-                                resultSet.getString(
-                                        "slug_acao_relacionada"
-                                ),
-                                resultSet.getString(
-                                        "status_conquista"
-                                )
-                        )
-                );
+                    Integer criterioValor =
+                            criterioNumero == null
+                                    ? null
+                                    : criterioNumero.intValue();
+
+                    Integer odsId =
+                            odsNumero == null
+                                    ? null
+                                    : odsNumero.intValue();
+
+                    lista.add(
+                            new Conquista(
+                                    resultSet.getInt(
+                                            "id_conquista"
+                                    ),
+                                    resultSet.getString(
+                                            "nome_conquista"
+                                    ),
+                                    resultSet.getString(
+                                            "descricao_conquista"
+                                    ),
+                                    resultSet.getString(
+                                            "tipo_conquista"
+                                    ),
+                                    criterioValor,
+                                    odsId,
+                                    resultSet.getString(
+                                            "slug_acao_relacionada"
+                                    ),
+                                    resultSet.getString(
+                                            "status_conquista"
+                                    )
+                            )
+                    );
+                }
             }
 
         } catch (SQLException e) {
