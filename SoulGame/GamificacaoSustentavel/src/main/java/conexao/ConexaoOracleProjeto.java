@@ -6,39 +6,61 @@ import java.sql.SQLException;
 
 public class ConexaoOracleProjeto {
 
-    private static final String URL =
+    private static final String URL_PADRAO =
             "jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL";
 
-    private static final String USUARIO =
+    private static final String USUARIO_PADRAO =
             "rm570452";
 
-    private static final String SENHA =
+    private static final String SENHA_PADRAO =
             "130398";
 
     private ConexaoOracleProjeto() {
     }
 
     public static Connection conectar() throws SQLException {
-        if (URL.startsWith("COLOCAR_")
-                || USUARIO.startsWith("COLOCAR_")
-                || SENHA.startsWith("COLOCAR_")) {
 
-            throw new SQLException(
-                    "Preencha URL, USUARIO e SENHA do Oracle em ConexaoOracleProjeto.java."
-            );
-        }
+        String url = obterVariavelAmbiente(
+                "DB_URL",
+                URL_PADRAO
+        );
+
+        String usuario = obterVariavelAmbiente(
+                "DB_USER",
+                USUARIO_PADRAO
+        );
+
+        String senha = obterVariavelAmbiente(
+                "DB_PASSWORD",
+                SENHA_PADRAO
+        );
 
         return DriverManager.getConnection(
-                URL,
-                USUARIO,
-                SENHA
+                url,
+                usuario,
+                senha
         );
     }
 
+    private static String obterVariavelAmbiente(
+            String nome,
+            String valorPadrao) {
+
+        String valor = System.getenv(nome);
+
+        if (valor == null || valor.isBlank()) {
+            return valorPadrao;
+        }
+
+        return valor;
+    }
+
     public static boolean testarConexao() {
+
         Connection connection = null;
 
         try {
+
             connection = conectar();
 
             return connection != null
@@ -56,8 +78,11 @@ public class ConexaoOracleProjeto {
         } finally {
 
             if (connection != null) {
+
                 try {
+
                     connection.close();
+
                 } catch (SQLException e) {
 
                     System.out.println(
