@@ -1,3 +1,4 @@
+
 package conexao;
 
 import java.sql.Connection;
@@ -9,12 +10,6 @@ public class ConexaoOracleProjeto {
     private static final String URL_PADRAO =
             "jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL";
 
-    private static final String USUARIO_PADRAO =
-            "rm570452";
-
-    private static final String SENHA_PADRAO =
-            "130398";
-
     private ConexaoOracleProjeto() {
     }
 
@@ -25,15 +20,8 @@ public class ConexaoOracleProjeto {
                 URL_PADRAO
         );
 
-        String usuario = obterVariavelAmbiente(
-                "DB_USER",
-                USUARIO_PADRAO
-        );
-
-        String senha = obterVariavelAmbiente(
-                "DB_PASSWORD",
-                SENHA_PADRAO
-        );
+        String usuario = obterVariavelObrigatoria("DB_USER");
+        String senha = obterVariavelObrigatoria("DB_PASSWORD");
 
         return DriverManager.getConnection(
                 url,
@@ -50,6 +38,21 @@ public class ConexaoOracleProjeto {
 
         if (valor == null || valor.isBlank()) {
             return valorPadrao;
+        }
+
+        return valor;
+    }
+
+    private static String obterVariavelObrigatoria(
+            String nome) throws SQLException {
+
+        String valor = System.getenv(nome);
+
+        if (valor == null || valor.isBlank()) {
+            throw new SQLException(
+                    "Variavel de ambiente obrigatoria nao configurada: "
+                            + nome
+            );
         }
 
         return valor;
