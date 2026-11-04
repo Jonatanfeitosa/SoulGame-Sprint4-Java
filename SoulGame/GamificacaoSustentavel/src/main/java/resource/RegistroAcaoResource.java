@@ -151,6 +151,59 @@ public class RegistroAcaoResource {
                 .body(resposta);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(
+            @PathVariable int id,
+            @RequestBody RegistroAcao dados) {
+
+        RegistroAcao existente = registroDAO.buscarPorId(id);
+
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (dados == null) {
+            return erro(HttpStatus.BAD_REQUEST, "Dados invalidos.");
+        }
+
+        existente.setLatitude(dados.getLatitude());
+        existente.setLongitude(dados.getLongitude());
+
+        if (!registroDAO.atualizar(existente)) {
+            return erro(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Nao foi possivel atualizar o registro."
+            );
+        }
+
+        return ResponseEntity.ok(existente);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluir(@PathVariable int id) {
+
+        RegistroAcao existente = registroDAO.buscarPorId(id);
+
+        if (existente == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (existente.getPontosObtidos() != 0) {
+            return erro(
+                    HttpStatus.CONFLICT,
+                    "Registro possui pontos. Exclusao exige estorno transacional."
+            );
+        }
+
+        if (!registroDAO.excluir(id)) {
+            return erro(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Nao foi possivel excluir o registro."
+            );
+        }
+
+        return ResponseEntity.noContent().build();
+    }
     private ResponseEntity<Map<String, String>> erro(
             HttpStatus status,
             String mensagem) {
