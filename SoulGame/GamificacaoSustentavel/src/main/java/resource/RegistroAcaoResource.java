@@ -156,18 +156,41 @@ public class RegistroAcaoResource {
             @PathVariable int id,
             @RequestBody RegistroAcao dados) {
 
-        RegistroAcao existente = registroDAO.buscarPorId(id);
+        RegistroAcao existente =
+                registroDAO.buscarPorId(id);
 
         if (existente == null) {
             return ResponseEntity.notFound().build();
         }
 
-        if (dados == null) {
-            return erro(HttpStatus.BAD_REQUEST, "Dados invalidos.");
+        if (dados == null
+                || dados.getLatitude() == null
+                || dados.getLongitude() == null) {
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Latitude e longitude sao obrigatorias."
+            );
         }
 
-        existente.setLatitude(dados.getLatitude());
-        existente.setLongitude(dados.getLongitude());
+        double latitude = dados.getLatitude();
+        double longitude = dados.getLongitude();
+
+        if (!Double.isFinite(latitude)
+                || !Double.isFinite(longitude)
+                || latitude < -90
+                || latitude > 90
+                || longitude < -180
+                || longitude > 180) {
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "Coordenadas geograficas invalidas."
+            );
+        }
+
+        existente.setLatitude(latitude);
+        existente.setLongitude(longitude);
 
         if (!registroDAO.atualizar(existente)) {
             return erro(
@@ -180,9 +203,11 @@ public class RegistroAcaoResource {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable int id) {
+    public ResponseEntity<?> excluir(
+            @PathVariable int id) {
 
-        RegistroAcao existente = registroDAO.buscarPorId(id);
+        RegistroAcao existente =
+                registroDAO.buscarPorId(id);
 
         if (existente == null) {
             return ResponseEntity.notFound().build();
@@ -204,6 +229,7 @@ public class RegistroAcaoResource {
 
         return ResponseEntity.noContent().build();
     }
+
     private ResponseEntity<Map<String, String>> erro(
             HttpStatus status,
             String mensagem) {
