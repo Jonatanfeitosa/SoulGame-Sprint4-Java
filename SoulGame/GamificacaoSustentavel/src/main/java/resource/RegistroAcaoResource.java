@@ -203,31 +203,26 @@ public class RegistroAcaoResource {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(
-            @PathVariable int id) {
+    public ResponseEntity<?> excluir(@PathVariable int id) {
+        RegistroAcaoDAO.ResultadoExclusao resultado =
+                registroDAO.excluirComEstorno(id);
 
-        RegistroAcao existente =
-                registroDAO.buscarPorId(id);
-
-        if (existente == null) {
-            return ResponseEntity.notFound().build();
+        switch (resultado) {
+            case EXCLUIDO:
+                return ResponseEntity.noContent().build();
+            case NAO_ENCONTRADO:
+                return ResponseEntity.notFound().build();
+            case POSSUI_DEPENDENCIAS:
+                return erro(
+                        HttpStatus.CONFLICT,
+                        "Registro possui evidencias ou validacoes vinculadas."
+                );
+            default:
+                return erro(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Nao foi possivel excluir o registro."
+                );
         }
-
-        if (existente.getPontosObtidos() != 0) {
-            return erro(
-                    HttpStatus.CONFLICT,
-                    "Registro possui pontos. Exclusao exige estorno transacional."
-            );
-        }
-
-        if (!registroDAO.excluir(id)) {
-            return erro(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Nao foi possivel excluir o registro."
-            );
-        }
-
-        return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<Map<String, String>> erro(

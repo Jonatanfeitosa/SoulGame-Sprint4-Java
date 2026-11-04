@@ -267,6 +267,96 @@ public class RegistroAcaoDAO {
         }
     }
 
+    public enum ResultadoExclusao {
+        EXCLUIDO,
+        NAO_ENCONTRADO,
+        POSSUI_DEPENDENCIAS,
+        ERRO
+    }
+
+    /**
+     * Exclui o registro e estorna sua pontuacao em uma unica transacao JDBC.
+     * Evidencias e validacoes existentes nunca sao apagadas.
+     */
+    public ResultadoExclusao excluirComEstorno(int id) {
+        try (Connection connection = ConexaoOracleProjeto.conectar()) {
+            connection.setAutoCommit(false);
+
+            try {
+                int usuarioId;
+                int pontos;
+
+                // Bloqueia o registro durante a verificacao e a exclusao.
+                String consulta = "SELECT ID_USUARIO, PONTOS_OBTIDOS "
+                        + "FROM TB_REGISTRO_ACAO WHERE ID_REGISTRO = ? FOR UPDATE";
+                try (PreparedStatement ps = connection.prepareStatement(consulta)) {
+                    ps.setInt(1, id);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            connection.rollback();
+                            return ResultadoExclusao.NAO_ENCONTRADO;
+                        }
+                        usuarioId = rs.getInt("ID_USUARIO");
+                        pontos = rs.getInt("PONTOS_OBTIDOS");
+                    }
+                }
+
+                String dependencias = "SELECT 1 FROM TB_EVIDENCIA WHERE ID_REGISTRO = ? "
+                        + "UNION ALL SELECT 1 FROM TB_VALIDACAO WHERE ID_REGISTRO = ?";
+                try (PreparedStatement ps = connection.prepareStatement(dependencias)) {
+                    ps.setInt(1, id);
+                    ps.setInt(2, id);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            connection.rollback();
+                            return ResultadoExclusao.POSSUI_DEPENDENCIAS;
+                        }
+                    }
+                }
+
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "DELETE FROM TB_REGISTRO_ACAO WHERE ID_REGISTRO = ?")) {
+                    ps.setInt(1, id);
+                    if (ps.executeUpdate() != 1) {
+                        connection.rollback();
+                        return ResultadoExclusao.ERRO;
+                    }
+                }
+
+                // Atualizacao atomica, sem sobrescrever outros campos do usuario.
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "UPDATE TB_USUARIO SET TOTAL_PONTOS_USUARIO = "
+                                + "GREATEST(0, TOTAL_PONTOS_USUARIO - ?) "
+                                + "WHERE ID_USUARIO = ?")) {
+                    ps.setInt(1, pontos);
+                    ps.setInt(2, usuarioId);
+                    if (ps.executeUpdate() != 1) {
+                        connection.rollback();
+                        return ResultadoExclusao.ERRO;
+                    }
+                }
+
+                connection.commit();
+                return ResultadoExclusao.EXCLUIDO;
+            } catch (SQLException e) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                System.out.println("Erro ao excluir registro com estorno: " + e.getMessage());
+                // ORA-02292: uma referencia surgiu ou permaneceu durante a exclusao.
+                if (e.getErrorCode() == 2292) {
+                    return ResultadoExclusao.POSSUI_DEPENDENCIAS;
+                }
+                return ResultadoExclusao.ERRO;
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro de conexao ao excluir registro: " + e.getMessage());
+            return ResultadoExclusao.ERRO;
+        }
+    }
+
     private void preencher(
             PreparedStatement statement,
             RegistroAcao registro,
